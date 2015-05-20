@@ -32,24 +32,26 @@ def effet_boris():
     GPIO.output(10, 1)
     
 
-def blink(gpio, length):
+def blink(gpio, length, end_on=False):
     for i in range(1,length):
         GPIO.output(gpio, 1)
         time.sleep(0.3)
         GPIO.output(gpio, 0)
         time.sleep(0.3)
+    if end_on:
+        GPIO.output(gpio, 1)
 
 
 try:
     while True:
         if GPIO.input(22):
             print "Demo"
-            threading.Thread(target=blink, args=(9, 10)).start()
+            threading.Thread(target=blink, args=(9, 10, False)).start()
         if GPIO.input(4):
             print "Call"
         if GPIO.input(17):
             print "Start"
-            threading.Thread(target=blink, args=(11, 6)).start()
+            threading.Thread(target=blink, args=(11, 6, True)).start()
             #GPIO.output(11, 1)
         if GPIO.input(27):
             print "Stop"
