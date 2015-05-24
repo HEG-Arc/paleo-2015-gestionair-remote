@@ -2,14 +2,20 @@ import threading
 import RPi.GPIO as GPIO
 import time
 
-BTN_KEY = 18
-BTN_DEMO = 22
-BTN_CALL = 4
-BTN_START = 17
-BTN_STOP = 27
-LED_ON = 10
-LED_DEMO = 9
-LED_START = 11 
+BTN_KEY = 23
+BTN_DEMO = 10
+BTN_CALL = 17
+BTN_START = 27
+BTN_STOP = 22
+LED_ON = 7
+LED_DEMO = 25
+LED_START = 8 
+
+URL_DEMO = "https://gestionair.ch/remote/demo/"
+URL_CALL = "https://gestionair.ch/remote/call/"
+URL_START = "https://gestionair.ch/remote/start/"
+URL_STOP = "https://gestionair.ch/remote/stop/"
+URL_STATUS = "https://gestionair.ch/remote/status/"
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(BTN_KEY, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
