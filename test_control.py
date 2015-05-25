@@ -87,7 +87,7 @@ def process_command(command):
             if command == "STOP":
                 GPIO.output(LED_START, 0)
             elif command == "START":
-                threading.Thread(target=blink, args=(LED_START, 6, True)).start()
+                GPIO.output(LED_START, 1)
             elif command == "DEMO":
                 threading.Thread(target=blink, args=(LED_DEMO, 6, True)).start()
         else:
@@ -122,6 +122,7 @@ def blink(led, length, end_on=False):
 
 
 def check_status(check_status_stop):
+    # TODO: Add a way to restart if unable to get the URL
     game_status = False
     demo_status = False
     while(not check_status_stop.is_set()):
