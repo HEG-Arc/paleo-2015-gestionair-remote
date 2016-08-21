@@ -1,193 +1,166 @@
 import threading
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
+from GPIOEmulator.EmulatorGUI import GPIO
 import time
 import requests
 import json
 import logging
-import memcache
 
+
+API_URL = 'http://192.168.1.1'
+
+
+class Led(object):
+    def __init__(self, gpio):
+        self.gpio = gpio
+        self._stop = None
+        self.blinking = False
+
+    def blink(self):
+        if self.blinking:
+            return
+        self.blinking = True
+        self._stop = threading.Event()
+        threading.Thread(target=self._blink).start()
+
+    def _blink(self):
+        out = True
+        while not self._stop.is_set():
+            GPIO.output(self.gpio, int(out))
+            out = not out
+            self._stop.wait(0.3)
+
+    def _blink_stop(self):
+        self.blinking = False
+        if self._stop:
+            self._stop.set()
+
+    def set(self, on):
+        if on: self.on()
+        else: self.off()
+
+    def on(self):
+        self._blink_stop()
+        GPIO.output(self.gpio, 1)
+
+    def off(self):
+        GPIO.output(self.gpio, 0)
 
 BTN_KEY = 23
+LED_ON_GPIO = 7
+LED_ON = Led(LED_ON_GPIO)
 BTN_DEMO = 10
+LED_DEMO_GPIO = 25
+LED_DEMO = Led(LED_DEMO_GPIO)
 BTN_CALL = 17
 BTN_START = 27
+LED_START_GPIO = 8
+LED_START = Led(LED_START_GPIO)
 BTN_STOP = 22
-LED_ON = 7
-LED_DEMO = 25
-LED_START = 8 
 
-
-URL_DEMO = "/scheduler/demo/"
-URL_CALL = "/scheduler/call/"
-URL_START = "/scheduler/start/"
-URL_STOP = "/scheduler/stop/"
-URL_STATUS = "/scheduler/status/"
-
-
-COMMAND_URL = {'DEMO': URL_DEMO, 'CALL': URL_CALL, 'START': URL_START, 'STOP': URL_STOP, 'STATUS': URL_STATUS}
-
-
-LOGIN = "http://192.168.1.127:8000/accounts/login/"
-USERNAME = 'paleo'
-PASSWORD = 'paleo'
-
-
+# setup GPIO for remote
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(BTN_KEY, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(BTN_DEMO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(BTN_CALL, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(BTN_START, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(BTN_STOP, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(LED_ON, GPIO.OUT)
-GPIO.setup(LED_DEMO, GPIO.OUT)
-GPIO.setup(LED_START, GPIO.OUT)
+GPIO.setup(LED_ON_GPIO, GPIO.OUT)
+GPIO.setup(LED_DEMO_GPIO, GPIO.OUT)
+GPIO.setup(LED_START_GPIO, GPIO.OUT)
 
-GPIO.output(LED_ON, 0)
-GPIO.output(LED_DEMO, 0)
-GPIO.output(LED_START, 0)
-
-btn_key_prev_reading = 0
-btn_demo_prev_reading = 0
-btn_call_prev_reading = 0
-btn_start_prev_reading = 0
-btn_stop_prev_reading = 0
-
+GPIO.output(LED_ON_GPIO, 0)
+GPIO.output(LED_DEMO_GPIO, 0)
+GPIO.output(LED_START_GPIO, 0)
 
 logger = logging.getLogger("Gestion'air Remote")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = logging.FileHandler("/var/log/gestionair/remote.log")
+handler = logging.FileHandler("remote.log")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 logger.info("Starting the Gestion'air Remote daemon...")
 
-mc = memcache.Client(['127.0.0.1:11211'], debug=0)
 
-client = requests.session()
-
-check_status_stop = threading.Event()
-
-def get_url(url):
-    # Retrieve the CSRF token first
-    client.get(LOGIN)  # sets the cookie
-    csrftoken = client.cookies['csrftoken']
-    data = dict(login=USERNAME, password=PASSWORD, csrfmiddlewaretoken=csrftoken, next=url)
-    r = client.post(LOGIN, data=data, headers={"Referer": "http://192.168.1.127:8000/"})
-    print r.content
-    return json.loads(r.content)
-
-
-def process_command(command):
-    if command in COMMAND_URL:
-        logger.info("Process command: %s" % command)
-        confirmation = get_url(COMMAND_URL[command])
-        if confirmation['success']:
-            logger.info("Command %s sucessfully sent: %s" % (command, confirmation['message']))
-            if command == "STOP":
-                GPIO.output(LED_START, 0)
-            elif command == "START":
-                GPIO.output(LED_START, 1)
-            elif command == "DEMO":
-                threading.Thread(target=blink, args=(LED_DEMO, 6, True)).start()
-        else:
-            logger.info("Command %s failed: %s" % (command, confirmation['message']))
-    else:
-        logger.info("Wrong command: %s" % command)
-
-
-def effet_boris():
+def effect_start():
     for i in range(1,6):
-        GPIO.output(LED_START, 0)
-        GPIO.output(LED_ON, 1)
+        GPIO.output(LED_START_GPIO, 0)
+        GPIO.output(LED_ON_GPIO, 1)
         time.sleep(0.2)
-        GPIO.output(LED_ON, 0)
-        GPIO.output(LED_DEMO, 1)
+        GPIO.output(LED_ON_GPIO, 0)
+        GPIO.output(LED_DEMO_GPIO, 1)
         time.sleep(0.2)
-        GPIO.output(LED_DEMO, 0)
-        GPIO.output(LED_START, 1)
+        GPIO.output(LED_DEMO_GPIO, 0)
+        GPIO.output(LED_START_GPIO, 1)
         time.sleep(0.2)
-    GPIO.output(LED_START, 0)
-    GPIO.output(LED_ON, 1)
-    
-
-def blink(led, length, end_on=False):
-    for i in range(1,length):
-        GPIO.output(led, 1)
-        time.sleep(0.3)
-        GPIO.output(led, 0)
-        time.sleep(0.3)
-    if end_on:
-        GPIO.output(led, 1)
+    GPIO.output(LED_START_GPIO, 0)
+    GPIO.output(LED_ON_GPIO, 1)
 
 
-def check_status(check_status_stop):
-    # TODO: Add a way to restart if unable to get the URL
-    game_status = False
-    demo_status = False
-    while(not check_status_stop.is_set()):
-        status = get_url(URL_STATUS)
-        if status['game'] != game_status:
-            if game_status == "RUNNING":
-                # The game finished
-                GPIO.output(LED_START, 0)
-            game_status = status['game']
-        if status['demo'] != demo_status:
-            if demo_status == "RUNNING":
-                # The game finished
-                GPIO.output(LED_DEMO, 0)
-            demo_status = status['demo']
-        check_status_stop.wait(1)
-        pass
+def key_event():
+    # ON: Should trigger led test and then get into normal operation mode
+    if GPIO.input(BTN_KEY) == 1:
+        effect_start()
+        LED_ON.on()
+    else:
+        # OFF: QUESTION: ?? lock dashboard or stop sim?
+        LED_ON.off()
+
+GPIO.add_event_detect(BTN_KEY, GPIO.BOTH, callback=key_event, bouncetime=200)
 
 
-threading.Thread(target=check_status, args=(check_status_stop,)).start()
+def start_event():
+    requests.get(API_URL + '/game/start')
+    LED_START.blink()
+
+GPIO.add_event_detect(BTN_START, GPIO.RISING, callback=start_event, bouncetime=200)
+
+
+def stop_event():
+    requests.get(API_URL + '/game/stop')
+    LED_START.blink()
+
+GPIO.add_event_detect(BTN_START, GPIO.RISING, callback=stop_event, bouncetime=200)
+
+
+def call_event():
+    requests.get(API_URL + '/game/api/play_sound/call')
+
+GPIO.add_event_detect(BTN_START, GPIO.RISING, callback=call_event, bouncetime=200)
+
+
+def demo_event():
+    requests.get(API_URL + '/game/api/call/1201')
+    LED_DEMO.blink()
+
+GPIO.add_event_detect(BTN_START, GPIO.RISING, callback=demo_event, bouncetime=200)
 
 
 try:
     while True:
-        # Button DEMO
-        btn_demo_reading = GPIO.input(BTN_DEMO)
-        if btn_demo_reading and not btn_demo_prev_reading:
-            print "Demo"
-            threading.Thread(target=process_command, args=('DEMO',)).start()
-        btn_demo_prev_reading = btn_demo_reading
+        # Check sim status for leds
+        try:
+            res = requests.get(API_URL + '/game/api/status').json()
+        except:
+            res = {
+                'isRunning': False,
+                'demoState': 'ERROR',
+            }
+            LED_ON.blink()
+        ## LED_ON ??
 
-        # Button CALL
-        btn_call_reading = GPIO.input(BTN_CALL)
-        if btn_call_reading and not btn_call_prev_reading:
-            print "Call"
-            threading.Thread(target=process_command, args=('CALL',)).start()
-        btn_call_prev_reading = btn_call_reading
+        LED_START.set(res['isRunning'])
 
-        # Button START
-        btn_start_reading = GPIO.input(BTN_START)
-        if btn_start_reading and not btn_start_prev_reading:
-            print "Start"
-            threading.Thread(target=process_command, args=('START',)).start()
-        btn_start_prev_reading = btn_start_reading
-
-        # Button STOP
-        btn_stop_reading = GPIO.input(BTN_STOP)
-        if btn_stop_reading and not btn_stop_prev_reading:
-            print "Stop"
-            threading.Thread(target=process_command, args=('STOP',)).start()
-        btn_stop_prev_reading = btn_stop_reading
-
-        # Key Switch
-        btn_key_reading = GPIO.input(BTN_KEY)
-        if btn_key_reading and not btn_key_prev_reading:
-            print "Starting"
-            threading.Thread(target=effet_boris).start()
-        if not btn_key_reading and btn_key_prev_reading:
-            print "Stopping"
-            GPIO.output(LED_ON, 0)
-        btn_key_prev_reading = btn_key_reading
+        # on indicate ready for demo, blinking during ringing, off during answer
+        if res['demoState'] == 'FREE':
+            LED_DEMO.on()
+        elif res['demoState'] != 'RINGING':
+            LED_DEMO.off()
 
         # Some sleep
-        time.sleep(0.1)
+        time.sleep(1)
 
 finally:
     logger.info("Terminating the Gestion'air Remote daemon...")
-    check_status_stop.set()
     GPIO.cleanup()

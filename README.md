@@ -31,7 +31,8 @@ Buttton should be debounce only if value changes between reads it shoudl registe
 ## LED_DEMO
   While asterisk Demo channel is:
   * ringing blink
-  * established ON
+  * established Off
+  * ready to do demo = ON
         
 ## BTN_CALL
   * PUSH: play musique
