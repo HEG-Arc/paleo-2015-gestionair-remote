@@ -1,6 +1,6 @@
 import threading
-#import RPi.GPIO as GPIO
-from GPIOEmulator.EmulatorGUI import GPIO
+import RPi.GPIO as GPIO
+#from GPIOEmulator.EmulatorGUI import GPIO
 import time
 import requests
 import json
@@ -107,34 +107,34 @@ def key_event():
         # OFF: QUESTION: ?? lock dashboard or stop sim?
         LED_ON.off()
 
-GPIO.add_event_detect(BTN_KEY, GPIO.BOTH, callback=key_event, bouncetime=200)
+GPIO.add_event_detect(BTN_KEY, GPIO.BOTH, callback=key_event, bouncetime=500)
 
 
 def start_event():
     requests.get(API_URL + '/game/start')
     LED_START.blink()
 
-GPIO.add_event_detect(BTN_START, GPIO.RISING, callback=start_event, bouncetime=200)
+GPIO.add_event_detect(BTN_START, GPIO.RISING, callback=start_event, bouncetime=500)
 
 
 def stop_event():
     requests.get(API_URL + '/game/stop')
     LED_START.blink()
 
-GPIO.add_event_detect(BTN_START, GPIO.RISING, callback=stop_event, bouncetime=200)
+GPIO.add_event_detect(BTN_STOP, GPIO.RISING, callback=stop_event, bouncetime=500)
 
 
 def call_event():
     requests.get(API_URL + '/game/api/play_sound/call')
 
-GPIO.add_event_detect(BTN_START, GPIO.RISING, callback=call_event, bouncetime=200)
+GPIO.add_event_detect(BTN_CALL, GPIO.RISING, callback=call_event, bouncetime=500)
 
 
 def demo_event():
     requests.get(API_URL + '/game/api/call/1201')
     LED_DEMO.blink()
 
-GPIO.add_event_detect(BTN_START, GPIO.RISING, callback=demo_event, bouncetime=200)
+GPIO.add_event_detect(BTN_DEMO, GPIO.RISING, callback=demo_event, bouncetime=500)
 
 
 try:
