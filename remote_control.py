@@ -6,8 +6,7 @@ import requests
 import json
 import logging
 
-API_URL = 'http://localhost:8088'
-#API_URL = 'http://192.168.1.1'
+API_URL = 'http://192.168.1.1'
 
 
 class Led(object):
