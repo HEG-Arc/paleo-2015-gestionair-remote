@@ -48,3 +48,15 @@ Buttton should be debounce only if value changes between reads it shoudl registe
     
 ## BTN_STOP
   * PUSH: Send stop to simulator
+
+# Supervisor Script
+
+    [program:remote-control]
+    command=/usr/bin/python /home/pi/paleo-2015-gestionair-remote/remote_control.py
+    directory=/home/pi/paleo-2015-gestionair-remote
+    autostart=true
+    autorestart=true
+    startretries=3
+    stderr_logfile=/var/log/gestionair/remote.err.log
+    stdout_logfile=/var/log/gestionair/remote.out.log
+    user=root
