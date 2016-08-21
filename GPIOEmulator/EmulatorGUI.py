@@ -300,7 +300,7 @@ def toggleButton(gpioID):
 
     # TODO: respect EDGE detect type
     if str(gpioID) in CALLBACKS:
-        [x() for x in CALLBACKS[str(gpioID)]]
+        [x(int(str(gpioID))) for x in CALLBACKS[str(gpioID)]]
 
     objBtn["text"] = getLabel(gpioID) + "\nIN=" + str(objPin.In)
 
