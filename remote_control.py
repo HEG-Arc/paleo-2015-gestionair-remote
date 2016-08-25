@@ -126,7 +126,7 @@ GPIO.add_event_detect(BTN_STOP, GPIO.FALLING, callback=stop_event, bouncetime=50
 
 
 def call_event(channel):
-    requests.get(API_URL + '/game/api/play_sound/call')
+    requests.get(API_URL + '/game/api/play-sound/call')
 
 GPIO.add_event_detect(BTN_CALL, GPIO.FALLING, callback=call_event, bouncetime=500)
 
