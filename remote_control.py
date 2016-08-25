@@ -153,13 +153,15 @@ try:
                 LED_ON.blink()
             ## led_on ??
             LED_START.set(res['isRunning'])
-            
+
             # on indicate ready for demo, blinking during ringing, off during answer
             if res['demoState'] == 'FREE':
                 LED_DEMO.on()
-            elif res['demoState'] != 'RINGING':
+            elif res['demoState'] == 'RINGING':
+                LED_DEMO.blink()
+            else:
                 LED_DEMO.off()
-        
+
         # some sleep
         time.sleep(1)
 
